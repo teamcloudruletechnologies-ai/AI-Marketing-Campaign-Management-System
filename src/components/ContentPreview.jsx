@@ -17,9 +17,124 @@ const FALLBACK_CONTENT = {
   Email: (title, theme) => `Subject: Introducing ${title} 📩\n\nHello Friend,\n\nWe are proud to present: ${title}.\n\n${theme ? `Highlight: ${theme}.` : "Our team has been working around the clock to build this feature, and we're excited to invite you to try it out."}\n\nBest,\nMarketing Team`
 };
 
+function getContextStyle(text) {
+  const lower = text.toLowerCase();
+  
+  if (/\b(ac|air conditioner|cooling|fridge|refrigerator|tv|television|fan|heater|washing machine|microwave|oven|appliance|appliances)\b/i.test(lower)) {
+    return {
+      category: "appliances",
+      style: "modern home interior, showing the appliance in a clean modern living room or bedroom, product photography, sleek, elegant, home appliances",
+      expanded: text.replace(/\bac\b/gi, "air conditioner").replace(/\bAC\b/g, "air conditioner")
+    };
+  }
+  
+  if (/\b(fit|gym|workout|fitness|run|sports|athletics|health|yoga|diet|muscle|protein)\b/i.test(lower)) {
+    return {
+      category: "fitness",
+      style: "fitness lifestyle visual, active healthy atmosphere, athletic background, energetic vibe",
+      expanded: text
+    };
+  }
+  
+  if (/\b(skincare|beauty|lotion|cream|shampoo|soap|makeup|cosmetics|serum|perfume|spa|salon)\b/i.test(lower)) {
+    return {
+      category: "beauty",
+      style: "premium cosmetic product photography, organic minimal elements, luxury studio setup",
+      expanded: text
+    };
+  }
+
+  if (/\b(food|restaurant|burger|pizza|cafe|coffee|drink|beverage|bakery|delicious|crave)\b/i.test(lower)) {
+    return {
+      category: "food",
+      style: "delicious gourmet food styling, macro product shot, warm appetizing lighting, fresh ingredients",
+      expanded: text
+    };
+  }
+  
+  if (/\b(wear|shirt|pant|shoes|sneakers|dress|fashion|clothing|apparel|style|luxury)\b/i.test(lower)) {
+    return {
+      category: "fashion",
+      style: "fashion studio editorial, high-end apparel display, professional clothing photography",
+      expanded: text
+    };
+  }
+
+  return {
+    category: "general",
+    style: "premium clean product lifestyle visual, modern sleek background",
+    expanded: text
+  };
+}
+
 function getImageUrl(title, theme) {
-  const prompt = encodeURIComponent(`${title} ${theme || "marketing"} professional social media post`);
+  const context = getContextStyle(title);
+  // We specify clean product/lifestyle imagery without text to avoid blurry generated text on the background image itself
+  const cleanPrompt = `${context.expanded} ${theme || "marketing"}, ${context.style}, highly detailed, sharp focus, no text, no words, no letters, no writing, no banners, no signs, no logos, plain unbranded product, no brand name printed, nologo=true`;
+  const prompt = encodeURIComponent(cleanPrompt);
   return `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600`;
+}
+
+function parseSummary(summary) {
+  if (!summary) return { heading: "", subheading: "", cta: "Learn More" };
+  
+  // Try splitting by common delimiters: " — ", " - ", " | ", or custom punctuation
+  const delimiters = [" — ", " - ", " | ", ", "];
+  for (const delimiter of delimiters) {
+    if (summary.includes(delimiter)) {
+      const parts = summary.split(delimiter);
+      const heading = parts[0].trim();
+      const subheading = parts.slice(1).join(delimiter).trim();
+      
+      let cta = "Learn More";
+      const lowerSummary = summary.toLowerCase();
+      if (lowerSummary.includes("sale") || lowerSummary.includes("shop") || lowerSummary.includes("off") || lowerSummary.includes("buy")) {
+        cta = "Shop Now";
+      } else if (lowerSummary.includes("signup") || lowerSummary.includes("register") || lowerSummary.includes("join")) {
+        cta = "Sign Up";
+      } else if (lowerSummary.includes("download")) {
+        cta = "Download";
+      }
+      
+      return { heading, subheading, cta };
+    }
+  }
+  
+  // Fallback if no delimiter
+  let heading = summary;
+  let subheading = "";
+  if (summary.length > 30) {
+    const words = summary.split(" ");
+    const mid = Math.ceil(words.length / 2);
+    heading = words.slice(0, mid).join(" ");
+    subheading = words.slice(mid).join(" ");
+  }
+  
+  let cta = "Learn More";
+  const lowerSummary = summary.toLowerCase();
+  if (lowerSummary.includes("sale") || lowerSummary.includes("shop") || lowerSummary.includes("off") || lowerSummary.includes("buy")) {
+    cta = "Shop Now";
+  }
+  
+  return { heading, subheading, cta };
+}
+
+function BannerOverlay({ summary }) {
+  const { heading, subheading, cta } = parseSummary(summary);
+  if (!heading) return null;
+
+  return (
+    <div className="banner-overlay-container">
+      <div className="banner-overlay-badge">
+        <span className="pulse-dot"></span> Special Offer
+      </div>
+      <h3 className="banner-overlay-title">{heading}</h3>
+      {subheading && <p className="banner-overlay-desc">{subheading}</p>}
+      <button className="banner-overlay-btn">
+        {cta} <i className="fa-solid fa-arrow-right ml-1"></i>
+      </button>
+    </div>
+  );
 }
 
 function PhoneMockup({ children }) {
@@ -34,7 +149,7 @@ function PhoneMockup({ children }) {
   );
 }
 
-function InstagramPreview({ post, imageUrl }) {
+function InstagramPreview({ post, imageUrl, summary }) {
   return (
     <PhoneMockup platform="Instagram">
       <div className="ig-header">
@@ -47,6 +162,7 @@ function InstagramPreview({ post, imageUrl }) {
       </div>
       <div className="ig-image-container">
         <img src={imageUrl} alt="Post" />
+        <BannerOverlay summary={summary} />
       </div>
       <div className="ig-actions">
         <div className="ig-actions-left">
@@ -66,7 +182,7 @@ function InstagramPreview({ post, imageUrl }) {
   );
 }
 
-function LinkedInPreview({ post, imageUrl }) {
+function LinkedInPreview({ post, imageUrl, summary }) {
   return (
     <PhoneMockup platform="LinkedIn">
       <div className="li-header">
@@ -81,6 +197,7 @@ function LinkedInPreview({ post, imageUrl }) {
       {imageUrl && (
         <div className="li-image">
           <img src={imageUrl} alt="Post" />
+          <BannerOverlay summary={summary} />
         </div>
       )}
       <div className="li-reactions">
@@ -101,7 +218,7 @@ function LinkedInPreview({ post, imageUrl }) {
   );
 }
 
-function TwitterPreview({ post, imageUrl }) {
+function TwitterPreview({ post, imageUrl, summary }) {
   return (
     <PhoneMockup platform="Twitter">
       <div className="tw-header">
@@ -116,6 +233,7 @@ function TwitterPreview({ post, imageUrl }) {
       {imageUrl && (
         <div className="tw-image">
           <img src={imageUrl} alt="Post" />
+          <BannerOverlay summary={summary} />
         </div>
       )}
       <div className="tw-time">2:30 PM · Jul 16, 2026</div>
@@ -137,7 +255,7 @@ function TwitterPreview({ post, imageUrl }) {
   );
 }
 
-function FacebookPreview({ post, imageUrl }) {
+function FacebookPreview({ post, imageUrl, summary }) {
   return (
     <PhoneMockup platform="Facebook">
       <div className="fb-header">
@@ -152,6 +270,7 @@ function FacebookPreview({ post, imageUrl }) {
       {imageUrl && (
         <div className="fb-image">
           <img src={imageUrl} alt="Post" />
+          <BannerOverlay summary={summary} />
         </div>
       )}
       <div className="fb-reactions">
@@ -312,7 +431,7 @@ export default function ContentPreview({ showToast, addHistoryLog, pushNotificat
       return <EmailPreview subject={postData.subject} body={postData.body} />;
     }
 
-    const props = { post: postData.caption, imageUrl: postData.imageUrl };
+    const props = { post: postData.caption, imageUrl: postData.imageUrl, summary };
 
     switch (activeTab) {
       case "Instagram": return <InstagramPreview {...props} />;
