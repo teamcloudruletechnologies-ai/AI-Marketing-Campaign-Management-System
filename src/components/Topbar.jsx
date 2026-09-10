@@ -8,7 +8,9 @@ export default function Topbar({
   notifications,
   setNotifications,
   onGlobalSearch,
-  showToast
+  showToast,
+  sidebarOpen,
+  setSidebarOpen
 }) {
   const [notifDropdownOpen, setNotifDropdownOpen] = React.useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = React.useState(false);
@@ -25,10 +27,10 @@ export default function Topbar({
           title: "Campaign Management",
           subtitle: "Configure, edit, and track active marketing pipelines."
         };
-      case "post-creator":
+      case "content-preview":
         return {
-          title: "Post Creator & Feed",
-          subtitle: "Draft and publish social media marketing posts dynamically."
+          title: "Quick AI Generator",
+          subtitle: "Instantly draft posts across all social marketing channels."
         };
       case "email-generator":
         return {
@@ -105,10 +107,22 @@ export default function Topbar({
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <h1 id="page-title">{info.title}</h1>
-        <p className="page-subtitle" id="page-subtitle">
-          {info.subtitle}
-        </p>
+        {setSidebarOpen && (
+          <button
+            type="button"
+            className="mobile-hamburger-btn"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle navigation drawer"
+          >
+            <i className="fa-solid fa-bars"></i>
+          </button>
+        )}
+        <div className="topbar-title-wrap">
+          <h1 id="page-title">{info.title}</h1>
+          <p className="page-subtitle" id="page-subtitle">
+            {info.subtitle}
+          </p>
+        </div>
       </div>
 
       <div className="topbar-right">
@@ -134,11 +148,8 @@ export default function Topbar({
         >
           <button className="icon-btn" id="notification-btn" aria-label="Notifications">
             <i className="fa-solid fa-bell"></i>
-            {unreadCount > 0 && (
-              <span className="badge" id="notification-badge">
-                {unreadCount}
-              </span>
-            )}
+            {/* Notification red dot indicator */}
+            <span className="notif-red-dot" id="notification-badge"></span>
           </button>
 
           {notifDropdownOpen && (

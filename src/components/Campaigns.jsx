@@ -157,10 +157,12 @@ export default function Campaigns({
   });
 
   return (
-    <section id="page-campaigns" className="app-page">
-      <div className="filter-bar glass-card flex flex-wrap items-center justify-between gap-4 p-4 mb-6">
-        <div className="filter-group flex items-center gap-4">
-          <div className="search-box m-0">
+    <section id="page-campaigns" className="app-page campaigns-page">
+      {/* 1. FILTER & ACTION BAR */}
+      <div className="campaigns-filter-bar">
+        <div className="filter-controls-left">
+          {/* Search Box */}
+          <div className="search-box campaign-search-input">
             <i className="fa-solid fa-magnifying-glass"></i>
             <input
               type="text"
@@ -170,9 +172,10 @@ export default function Campaigns({
             />
           </div>
 
-          <div className="select-wrapper relative">
+          {/* Status Dropdown */}
+          <div className="status-select-wrap">
             <select
-              className="glass-select py-2 pl-4 pr-10 border border-[var(--glass-border)] bg-[rgba(255,255,255,0.6)] text-[var(--text-primary)] rounded-[var(--radius-md)] text-xs font-semibold appearance-none outline-none cursor-pointer"
+              className="status-dropdown-select"
               value={filterCampaignStatus}
               onChange={(e) => setFilterCampaignStatus(e.target.value)}
             >
@@ -181,87 +184,106 @@ export default function Campaigns({
               <option value="Paused">Paused</option>
               <option value="Completed">Completed</option>
             </select>
+            <i className="fa-solid fa-chevron-down select-arrow-icon"></i>
           </div>
         </div>
 
-        <button className="primary-btn" onClick={handleOpenCreateCampaign}>
-          <i className="fa-solid fa-plus"></i> Create Campaign
+        {/* Create Campaign Button */}
+        <button
+          type="button"
+          className="create-campaign-btn"
+          onClick={handleOpenCreateCampaign}
+        >
+          <i className="fa-solid fa-plus"></i>
+          <span>Create Campaign</span>
         </button>
       </div>
 
+      {/* 2. CAMPAIGNS CARDS GRID */}
       {filteredCampaigns.length === 0 ? (
-        <div className="empty-state glass-card p-12 text-center">
-          <i className="fa-solid fa-folder-open text-5xl text-[var(--text-muted)] mb-4"></i>
-          <h3 className="text-lg font-bold">No campaigns match your query</h3>
-          <p className="text-sm text-[var(--text-muted)] mt-1">
-            Try adjusting your status filters or search spelling.
+        <div className="empty-state-card">
+          <i className="fa-solid fa-folder-open empty-icon"></i>
+          <h3 className="empty-title">No campaigns match your query</h3>
+          <p className="empty-desc">
+            Try adjusting your status filters or search keywords.
           </p>
         </div>
       ) : (
-        <div className="campaigns-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="campaigns-cards-container">
+        <div className="campaigns-cards-grid" id="campaigns-cards-container">
           {filteredCampaigns.map((c) => (
-            <div key={c._id || c.id} className="campaign-card glass-card relative p-6 border border-[var(--glass-border)] rounded-[var(--radius-lg)] shadow-[var(--card-shadow)] transition-all duration-300 hover:translate-y-[-4px] hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)]">
-              <div className="card-top flex items-start justify-between mb-4">
-                <div className="card-top-left">
-                  <h3 className="campaign-name text-base font-bold text-[var(--text-primary)]">{c.name}</h3>
-                  <span className="objective text-xs font-medium text-[var(--text-muted)]">{c.objective}</span>
+            <div key={c._id || c.id} className="campaign-modern-card">
+              {/* Card Header */}
+              <div className="camp-card-header">
+                <div className="camp-info">
+                  <h3 className="camp-title">{c.name}</h3>
+                  <span className="camp-objective">{c.objective}</span>
                 </div>
                 <span
-                  className={`status-badge px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  className={`camp-status-badge ${
                     c.status === "Active"
-                      ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                      ? "status-badge-active"
                       : c.status === "Paused"
-                      ? "bg-amber-50 text-amber-600 border border-amber-100"
-                      : "bg-slate-50 text-slate-600 border border-slate-100"
+                      ? "status-badge-paused"
+                      : "status-badge-completed"
                   }`}
                 >
                   {c.status}
                 </span>
               </div>
 
-              <div className="card-metrics grid grid-cols-2 gap-4 py-4 my-2 border-y border-[var(--glass-border)]">
-                <div className="card-metric">
-                  <span className="label text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Budget</span>
-                  <span className="val text-lg font-bold text-[var(--text-primary)]">${c.budget.toLocaleString()}</span>
+              {/* Card Metrics (Budget & Est. ROI) */}
+              <div className="camp-metrics-row">
+                <div className="camp-metric-col">
+                  <span className="camp-metric-label">Budget</span>
+                  <span className="camp-metric-val budget-val">
+                    ${c.budget ? c.budget.toLocaleString() : "0"}
+                  </span>
                 </div>
-                <div className="card-metric text-right">
-                  <span className="label text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Est. ROI</span>
-                  <span className="val text-lg font-bold text-[var(--accent-purple)]">+{c.roi || 0}%</span>
+                <div className="camp-metric-col text-right">
+                  <span className="camp-metric-label">Est. ROI</span>
+                  <span className="camp-metric-val roi-val">
+                    +{c.roi || 0}%
+                  </span>
                 </div>
               </div>
 
-              <div className="card-dates flex items-center justify-between text-xs text-[var(--text-muted)] font-medium my-3">
-                <span>Start: {c.startDate}</span>
-                <span>End: {c.endDate}</span>
+              {/* Schedule Dates */}
+              <div className="camp-dates-row">
+                <i className="fa-regular fa-calendar camp-date-icon"></i>
+                <span className="camp-date-text">
+                  {c.startDate || "2026-06-01"} &rarr; {c.endDate || "2026-08-31"}
+                </span>
               </div>
 
-              <div className="card-channels flex items-center gap-1.5 mt-3 mb-2">
-                {c.channels &&
-                  c.channels.map((ch) => (
-                    <span
-                      key={ch}
-                      className="channel-tag px-2.5 py-1 text-[10px] font-bold rounded-[var(--radius-sm)] bg-[rgba(99,102,241,0.06)] text-[var(--accent-purple)] border border-[rgba(99,102,241,0.06)]"
-                    >
-                      {ch}
-                    </span>
-                  ))}
-              </div>
+              {/* Channels & Actions Footer */}
+              <div className="camp-footer-row">
+                <div className="camp-channels-group">
+                  {c.channels &&
+                    c.channels.map((ch) => (
+                      <span key={ch} className="camp-channel-pill">
+                        {ch}
+                      </span>
+                    ))}
+                </div>
 
-              <div className="card-actions flex items-center justify-end gap-2 mt-4 pt-3 border-t border-[var(--glass-border)]">
-                <button
-                  className="card-action-btn edit-btn flex items-center justify-center w-8 h-8 rounded-lg bg-[rgba(14,165,233,0.08)] hover:bg-[rgba(14,165,233,0.15)] text-[var(--accent-blue)] border border-transparent transition-all"
-                  aria-label="Edit Campaign"
-                  onClick={() => handleOpenEditCampaign(c._id || c.id)}
-                >
-                  <i className="fa-solid fa-pen-to-square"></i>
-                </button>
-                <button
-                  className="card-action-btn delete-btn flex items-center justify-center w-8 h-8 rounded-lg bg-[rgba(239,68,68,0.08)] hover:bg-[rgba(239,68,68,0.15)] text-[var(--accent-danger)] border border-transparent transition-all"
-                  aria-label="Delete Campaign"
-                  onClick={() => handleDeleteCampaign(c._id || c.id)}
-                >
-                  <i className="fa-solid fa-trash-can"></i>
-                </button>
+                <div className="camp-actions-group">
+                  <button
+                    type="button"
+                    className="camp-action-btn edit-action"
+                    aria-label="Edit Campaign"
+                    onClick={() => handleOpenEditCampaign(c._id || c.id)}
+                  >
+                    <i className="fa-solid fa-pen-to-square"></i>
+                  </button>
+                  <button
+                    type="button"
+                    className="camp-action-btn delete-action"
+                    aria-label="Delete Campaign"
+                    onClick={() => handleDeleteCampaign(c._id || c.id)}
+                  >
+                    <i className="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
               </div>
             </div>
           ))}

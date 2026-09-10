@@ -29,8 +29,9 @@ export default function App() {
   const [globalLoading, setGlobalLoading] = useState(true);
   const [searchCampaigns, setSearchCampaigns] = useState("");
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "dark";
+    return localStorage.getItem("theme") || "light";
   });
 
   const toggleTheme = () => {
@@ -118,8 +119,27 @@ export default function App() {
         </div>
       )}
 
+      {/* MOBILE SIDEBAR BACKDROP */}
+      {sidebarOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* SIDEBAR NAVIGATION */}
-      <Sidebar activePage={activePage} setActivePage={setActivePage} theme={theme} toggleTheme={toggleTheme} />
+      <Sidebar
+        activePage={activePage}
+        setActivePage={(page) => {
+          setActivePage(page);
+          setSidebarOpen(false);
+        }}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+      />
 
       {/* MAIN CONTENT AREA */}
       <main className="main-content">
@@ -133,6 +153,8 @@ export default function App() {
           setNotifications={setNotifications}
           onGlobalSearch={handleGlobalSearch}
           showToast={showToast}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
         />
 
         {/* COMPONENT ROUTER BODY */}
