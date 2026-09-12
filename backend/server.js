@@ -286,51 +286,57 @@ app.put("/api/notifications/:id/read", async (req, res) => {
   }
 });
 
-// 6. n8n AI proxy (avoids browser CORS when calling external webhook)
-const N8N_WEBHOOK_URL =
-  process.env.N8N_WEBHOOK_URL ||
-  "https://praveen-10.app.n8n.cloud/webhook/generate-campaign-content";
-
-// n8n batch generation for Quick Generate page
-const N8N_BATCH_WEBHOOK_URL =
-  process.env.N8N_BATCH_WEBHOOK_URL ||
-  N8N_WEBHOOK_URL;
-
-app.post("/api/generate-ai-batch", async (req, res) => {
-  try {
-    const { summary } = req.body;
-    const response = await fetch(N8N_BATCH_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ summary, mode: "batch" })
-    });
-    if (!response.ok) {
-      return res.status(response.status).json({ error: `n8n batch webhook returned ${response.status}` });
-    }
-    const data = await response.json();
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+// 6. LOGIN endpoint
+app.post("/api/login", (req, res) => {
+  const { email, password } = req.body;
+  const validEmail = process.env.LOGIN_EMAIL || "admin@brand.com";
+  const validPassword = process.env.LOGIN_PASSWORD || "admin123";
+  if (email === validEmail && password === validPassword) {
+    return res.json({ success: true, message: "Login successful" });
   }
+  return res.status(401).json({ success: false, error: "Invalid email or password" });
 });
 
-app.post("/api/generate-ai-post", async (req, res) => {
+// 7. GEMINI IMAGE GENERATION endpoint (replaces n8n)
+app.post("/api/generate-image", async (req, res) => {
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: "GEMINI_API_KEY not set in backend/.env" });
+  }
+
+  const { prompt } = req.body;
+  if (!prompt) return res.status(400).json({ error: "prompt is required" });
+
   try {
-    const { title, platform, theme } = req.body;
-    const response = await fetch(N8N_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, platform, theme })
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseModalities: ["TEXT", "IMAGE"] }
+        })
+      }
+    );
+
     if (!response.ok) {
-      const message =
-        response.status === 404
-          ? "n8n workflow not found. Activate the workflow in n8n and set N8N_WEBHOOK_URL in backend/.env"
-          : `n8n webhook returned ${response.status}`;
-      return res.status(response.status).json({ error: message });
+      const errText = await response.text();
+      return res.status(response.status).json({ error: errText });
     }
+
     const data = await response.json();
-    res.json(data);
+    // Find the inline image part
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    const imagePart = parts.find((p) => p.inlineData);
+
+    if (!imagePart) {
+      return res.status(200).json({ imageUrl: null, fallback: true });
+    }
+
+    const { mimeType, data: b64 } = imagePart.inlineData;
+    const dataUrl = `data:${mimeType};base64,${b64}`;
+    return res.json({ imageUrl: dataUrl });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

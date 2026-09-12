@@ -14,6 +14,8 @@ class Campaign(Base):
     startDate = Column(String(50), nullable=False)
     endDate = Column(String(50), nullable=False)
     channels = Column(JSON, default=list)
+    imageUrl = Column(Text, default="")
+    content = Column(JSON, default=dict)
     createdAt = Column(DateTime(timezone=True), server_default=func.now())
     updatedAt = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

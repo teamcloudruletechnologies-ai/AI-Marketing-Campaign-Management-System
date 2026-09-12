@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 export default function Sidebar({
   activePage,
@@ -6,23 +7,23 @@ export default function Sidebar({
   theme,
   toggleTheme,
   sidebarOpen,
-  setSidebarOpen
+  setSidebarOpen,
+  onLogout
 }) {
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: "fa-solid fa-house" },
-    { id: "campaigns", label: "Campaigns", icon: "fa-solid fa-bullhorn" },
-    { id: "content-preview", label: "Quick Generate", icon: "fa-solid fa-bolt" },
-    { id: "email-generator", label: "Email Creator", icon: "fa-solid fa-envelope" },
-    { id: "analytics", label: "Analytics", icon: "fa-solid fa-chart-simple" },
-    { id: "history", label: "History Log", icon: "fa-solid fa-clock-rotate-left" },
-    { id: "profile", label: "Settings", icon: "fa-solid fa-gear" }
+    { id: "dashboard", path: "/dashboard", label: "Dashboard", icon: "fa-solid fa-house" },
+    { id: "campaigns", path: "/campaigns", label: "Campaigns", icon: "fa-solid fa-bullhorn" },
+    { id: "content-preview", path: "/quick-generate", label: "Quick Generate", icon: "fa-solid fa-bolt" },
+    { id: "analytics", path: "/analytics", label: "Analytics", icon: "fa-solid fa-chart-simple" },
+    { id: "history", path: "/history", label: "History Log", icon: "fa-solid fa-clock-rotate-left" },
+    { id: "profile", path: "/settings", label: "Settings", icon: "fa-solid fa-gear" }
   ];
 
   return (
     <aside className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
       {/* SIDEBAR HEADER / BRAND LOGO */}
       <div className="sidebar-header">
-        <div className="logo">
+        <Link to="/dashboard" className="logo" style={{ textDecoration: "none", color: "inherit" }}>
           {/* Folded ribbon geometric 'A' Brand Icon */}
           <div className="brand-logo-icon">
             <svg
@@ -62,7 +63,7 @@ export default function Sidebar({
             </div>
             <span className="logo-tagline">Smarter Campaigns. Better Results.</span>
           </div>
-        </div>
+        </Link>
 
         {/* Mobile close button */}
         {setSidebarOpen && (
@@ -84,18 +85,19 @@ export default function Sidebar({
             const isActive = activePage === item.id;
             return (
               <li key={item.id} className="menu-item-wrapper">
-                <button
-                  type="button"
+                <Link
+                  to={item.path}
                   className={`menu-item-btn ${isActive ? "active" : ""}`}
                   onClick={() => {
-                    setActivePage(item.id);
+                    if (setActivePage) setActivePage(item.id);
+                    if (setSidebarOpen) setSidebarOpen(false);
                   }}
                 >
                   <span className="menu-icon-wrap">
                     <i className={item.icon}></i>
                   </span>
                   <span className="menu-label">{item.label}</span>
-                </button>
+                </Link>
               </li>
             );
           })}

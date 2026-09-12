@@ -5,6 +5,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import httpx
+from pydantic import BaseModel
 from dotenv import load_dotenv
 
 import models
@@ -23,109 +24,22 @@ N8N_BATCH_WEBHOOK_URL = os.getenv("N8N_BATCH_WEBHOOK_URL", N8N_WEBHOOK_URL)
 
 def seed_database(db: Session):
     try:
-        # 1. Seed Campaigns
-        if db.query(models.Campaign).count() == 0:
-            default_campaigns = [
-                models.Campaign(
-                    name="Summer Fitness Kickoff",
-                    objective="Lead Generation",
-                    status="Active",
-                    budget=4500.0,
-                    roi=380.0,
-                    startDate="2026-06-01",
-                    endDate="2026-08-31",
-                    channels=["Instagram", "Facebook"]
-                ),
-                models.Campaign(
-                    name="SaaS Automations Launch",
-                    objective="Sales / Conversion",
-                    status="Active",
-                    budget=12000.0,
-                    roi=490.0,
-                    startDate="2026-05-15",
-                    endDate="2026-09-15",
-                    channels=["LinkedIn", "Email"]
-                ),
-                models.Campaign(
-                    name="Eco-Friendly App Promo",
-                    objective="Brand Awareness",
-                    status="Paused",
-                    budget=3000.0,
-                    roi=180.0,
-                    startDate="2026-07-01",
-                    endDate="2026-08-01",
-                    channels=["Instagram", "Facebook", "LinkedIn"]
-                ),
-                models.Campaign(
-                    name="Gourmet Coffee Launch",
-                    objective="Sales / Conversion",
-                    status="Completed",
-                    budget=6500.0,
-                    roi=420.0,
-                    startDate="2026-04-01",
-                    endDate="2026-05-30",
-                    channels=["Facebook", "Instagram", "Email"]
-                )
-            ]
-            db.add_all(default_campaigns)
-            db.commit()
-            print("Seeded default campaigns.")
-
-        # 2. Seed Profile
+        # Profile check: only seed if no profile exists
         if db.query(models.Profile).count() == 0:
             default_profile = models.Profile(
-                name="Sarah Jenkins",
-                email="sarah.j@apexglobal.com",
-                company="Apex Global Digital",
-                phone="+1 (555) 902-3481",
-                industry="Digital Agency / SaaS",
+                name="Marketing Admin",
+                email="admin@aimarketing.ai",
+                company="AI Marketing Suite",
+                phone="+1 (555) 019-2834",
+                industry="AI Marketing",
                 avatar="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150"
             )
             db.add(default_profile)
             db.commit()
-            print("Seeded default profile.")
-
-        # 3. Seed Notifications
-        if db.query(models.Notification).count() == 0:
-            default_notifs = [
-                models.Notification(
-                    title="Setup Completed",
-                    text="Fullstack FastAPI & MySQL backend connected and running smoothly.",
-                    type="success",
-                    unread=True
-                ),
-                models.Notification(
-                    title="Database Sync",
-                    text="MySQL database tables initialized.",
-                    type="info",
-                    unread=True
-                )
-            ]
-            db.add_all(default_notifs)
-            db.commit()
-            print("Seeded default notifications.")
-
-        # 4. Seed History
-        if db.query(models.History).count() == 0:
-            default_history = [
-                models.History(
-                    action="Database Initialized",
-                    category="campaign",
-                    details="Created and synced campaign database with MySQL."
-                ),
-                models.History(
-                    action="Campaign 'Summer Fitness Kickoff' Synced",
-                    category="campaign",
-                    details="Dynamic data binding established."
-                )
-            ]
-            db.add_all(default_history)
-            db.commit()
-            print("Seeded default history logs.")
-
     except Exception as e:
         print(f"Error seeding database: {e}")
         db.rollback()
+
 
 
 @asynccontextmanager
@@ -297,44 +211,133 @@ def create_history(history: schemas.HistoryCreate, db: Session = Depends(get_db)
     return db_item
 
 
-# --- 6. n8n AI PROXY ---
-@app.post("/api/generate-ai-batch")
-async def generate_ai_batch(request_data: schemas.AIBatchRequest):
-    async with httpx.AsyncClient() as client:
-        try:
-            res = await client.post(
-                N8N_BATCH_WEBHOOK_URL,
-                json={"summary": request_data.summary, "mode": "batch"},
-                timeout=30.0
-            )
-            if res.status_code != 200:
-                raise HTTPException(
-                    status_code=res.status_code,
-                    detail=f"n8n batch webhook returned {res.status_code}"
-                )
-            return res.json()
-        except httpx.RequestError as exc:
-            raise HTTPException(status_code=500, detail=f"HTTP Request failed: {exc}")
 
-@app.post("/api/generate-ai-post")
-async def generate_ai_post(request_data: schemas.AIPostRequest):
-    async with httpx.AsyncClient() as client:
-        try:
-            res = await client.post(
-                N8N_WEBHOOK_URL,
-                json=request_data.model_dump(),
-                timeout=30.0
-            )
-            if res.status_code != 200:
-                detail = (
-                    "n8n workflow not found. Activate the workflow in n8n and set N8N_WEBHOOK_URL in backend/.env"
-                    if res.status_code == 404
-                    else f"n8n webhook returned {res.status_code}"
-                )
-                raise HTTPException(status_code=res.status_code, detail=detail)
-            return res.json()
-        except httpx.RequestError as exc:
-            raise HTTPException(status_code=500, detail=f"HTTP Request failed: {exc}")
+# --- 6. LOGIN ---
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+@app.post("/api/login")
+def login(request_data: LoginRequest):
+    valid_email = os.getenv("LOGIN_EMAIL", "admin@brand.com")
+    valid_password = os.getenv("LOGIN_PASSWORD", "admin123")
+    if request_data.email == valid_email and request_data.password == valid_password:
+        return {"success": True, "message": "Login successful"}
+    raise HTTPException(status_code=401, detail="Invalid email or password")
+
+
+# --- 7. GOOGLE GEMINI AI GENERATION ---
+class TextGenerateRequest(BaseModel):
+    summary: str = ""
+    image_base64: str | None = None
+    mime_type: str = "image/jpeg"
+    tone: str = "Engaging & Persuasive"
+
+class ImageRequest(BaseModel):
+    prompt: str
+
+@app.post("/api/generate-text")
+async def generate_text(request_data: TextGenerateRequest):
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    
+    # Check if this is an image-to-caption request
+    has_image = bool(request_data.image_base64 and len(request_data.image_base64) > 50)
+    tone_hint = f" Desired tone of voice: '{request_data.tone}'." if request_data.tone else ""
+    
+    if has_image:
+        # Clean base64 string and extract mime type if data URI
+        raw_b64 = request_data.image_base64
+        mime_type = request_data.mime_type or "image/jpeg"
+        if raw_b64.startswith("data:"):
+            try:
+                header, raw_b64 = raw_b64.split(";base64,", 1)
+                mime_type = header.replace("data:", "").strip()
+            except Exception:
+                pass
+        
+        user_hint = f" Context or theme: '{request_data.summary}'." if request_data.summary.strip() else ""
+        prompt_text = (
+            f"You are an expert social media and marketing copywriter. Carefully look at this image.{user_hint}{tone_hint} "
+            f"Analyze the subjects, setting, style, colors, and product shown in this image. "
+            f"Generate compelling, ready-to-post marketing captions tailored to this photo with the requested tone. "
+            f"Return ONLY valid JSON with no markdown formatting and no code fences, with this exact structure: "
+            f"{{\"Instagram\": \"engaging Instagram caption with emojis, storytelling hook, and 8-10 trending hashtags\", "
+            f"\"Twitter\": \"catchy viral tweet with emojis and 2-3 hashtags\", "
+            f"\"LinkedIn\": \"insightful professional post emphasizing quality, value, and design\", "
+            f"\"EmailSubject\": \"compelling high-open-rate subject line\", "
+            f"\"EmailBody\": \"<div style='font-family:sans-serif;padding:16px;'><h3>Heading</h3><p>Engaging promotional email body HTML...</p></div>\"}}"
+        )
+        content_parts = [
+            {"text": prompt_text},
+            {"inlineData": {"mimeType": mime_type, "data": raw_b64}}
+        ]
+    else:
+        prompt_text = (
+            f"You are an expert marketing copywriter. Based on this product/campaign summary: \"{request_data.summary}\".{tone_hint} "
+            f"generate creative marketing content tailored to the requested tone. Return ONLY valid JSON with no markdown formatting and no code fences, with this structure: "
+            f"{{\"Instagram\": \"engaging Instagram caption with emojis and hashtags\", "
+            f"\"Twitter\": \"catchy tweet with emojis and hashtags\", "
+            f"\"LinkedIn\": \"professional brand update with hashtags\", "
+            f"\"EmailSubject\": \"compelling subject line\", "
+            f"\"EmailBody\": \"<div style='font-family:sans-serif;padding:16px;'><h3>Heading</h3><p>Engaging promotional email body HTML...</p></div>\"}}"
+        )
+        content_parts = [{"text": prompt_text}]
+
+    if GEMINI_API_KEY:
+        for model in ["gemini-3.6-flash", "gemini-2.5-flash"]:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
+            payload = {"contents": [{"parts": content_parts}]}
+            try:
+                async with httpx.AsyncClient(timeout=35.0) as client:
+                    res = await client.post(url, json=payload)
+                    if res.status_code == 200:
+                        data = res.json()
+                        parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+                        raw_text = parts[0].get("text", "") if parts else ""
+                        cleaned = raw_text.replace("```json", "").replace("```", "").strip()
+                        import json
+                        parsed = json.loads(cleaned)
+                        engine_name = f"Google Gemini Vision ({model})" if has_image else f"Google Gemini ({model})"
+                        return {"success": True, "data": parsed, "engine": engine_name}
+                    else:
+                        print(f"Gemini {model} error: {res.status_code} {res.text[:200]}")
+            except Exception as e:
+                print(f"Gemini {model} error:", e)
+
+    return {"success": False, "data": None, "engine": "Fallback"}
+
+
+@app.post("/api/generate-image")
+async def generate_image(request_data: ImageRequest):
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+    # Try Gemini Flash Image models
+    if GEMINI_API_KEY:
+        for model in ["gemini-3.1-flash-image", "gemini-2.5-flash-image", "gemini-3-pro-image"]:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
+            payload = {
+                "contents": [{"parts": [{"text": request_data.prompt}]}],
+                "generationConfig": {"responseModalities": ["IMAGE"]}
+            }
+            try:
+                async with httpx.AsyncClient(timeout=45.0) as client:
+                    res = await client.post(url, json=payload)
+                    if res.status_code == 200:
+                        data = res.json()
+                        parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+                        image_part = next((p for p in parts if "inlineData" in p), None)
+                        if image_part:
+                            mime = image_part["inlineData"]["mimeType"]
+                            b64 = image_part["inlineData"]["data"]
+                            return {"imageUrl": f"data:{mime};base64,{b64}", "engine": f"Google Gemini ({model})"}
+                    else:
+                        print(f"Gemini {model} error: {res.status_code}")
+            except Exception as e:
+                print(f"Gemini {model} image exception:", e)
+
+    return {"imageUrl": None, "fallback": True, "reason": "No active Gemini image quota, using smart fallback"}
+
+
 
 
 if __name__ == "__main__":

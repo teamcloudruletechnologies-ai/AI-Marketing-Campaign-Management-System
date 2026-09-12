@@ -1,5 +1,35 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api";
+
+function getCampaignPhoto(c) {
+  if (c.imageUrl && typeof c.imageUrl === "string" && c.imageUrl.trim()) {
+    return c.imageUrl;
+  }
+  if (c.content?.imageUrl && typeof c.content.imageUrl === "string" && c.content.imageUrl.trim()) {
+    return c.content.imageUrl;
+  }
+  const text = `${c.name || ""} ${c.objective || ""}`.toLowerCase();
+  if (/\b(ac|air conditioner|cooling|appliance)\b/i.test(text)) {
+    return "https://images.unsplash.com/photo-1585338107529-13afc5f02586?auto=format&fit=crop&w=800&q=80";
+  }
+  if (/\b(fitness|gym|workout|health)\b/i.test(text)) {
+    return "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80";
+  }
+  if (/\b(saas|tech|automation|ai|software|data)\b/i.test(text)) {
+    return "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80";
+  }
+  if (/\b(coffee|cafe|gourmet|food|drink)\b/i.test(text)) {
+    return "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80";
+  }
+  if (/\b(eco|green|nature|sustainab)\b/i.test(text)) {
+    return "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80";
+  }
+  if (/\b(fashion|cloth|wear|luxury)\b/i.test(text)) {
+    return "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80";
+  }
+  return "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80";
+}
 
 export default function Campaigns({
   campaigns,
@@ -13,6 +43,7 @@ export default function Campaigns({
   const [filterCampaignStatus, setFilterCampaignStatus] = useState("all");
   const [campaignModalOpen, setCampaignModalOpen] = useState(false);
   const [campaignEditId, setCampaignEditId] = useState(null);
+  const [selectedCampaignPhoto, setSelectedCampaignPhoto] = useState(null);
   const [campaignFormInputs, setCampaignFormInputs] = useState({
     name: "",
     objective: "Lead Generation",
@@ -21,7 +52,8 @@ export default function Campaigns({
     roi: "",
     startDate: "",
     endDate: "",
-    channels: ["Instagram", "Facebook"]
+    channels: ["Instagram", "Facebook"],
+    imageUrl: ""
   });
 
   const handleOpenCreateCampaign = () => {
@@ -39,7 +71,8 @@ export default function Campaigns({
       roi: "",
       startDate: `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`,
       endDate: `${nextMonth.getFullYear()}-${pad(nextMonth.getMonth() + 1)}-${pad(nextMonth.getDate())}`,
-      channels: ["Instagram", "Facebook"]
+      channels: ["Instagram", "Facebook"],
+      imageUrl: ""
     });
     setCampaignModalOpen(true);
   };
@@ -56,7 +89,8 @@ export default function Campaigns({
       roi: c.roi || "",
       startDate: c.startDate,
       endDate: c.endDate,
-      channels: c.channels || []
+      channels: c.channels || [],
+      imageUrl: c.imageUrl || c.content?.imageUrl || ""
     });
     setCampaignModalOpen(true);
   };
@@ -210,26 +244,49 @@ export default function Campaigns({
         </div>
       ) : (
         <div className="campaigns-cards-grid" id="campaigns-cards-container">
-          {filteredCampaigns.map((c) => (
-            <div key={c._id || c.id} className="campaign-modern-card">
-              {/* Card Header */}
-              <div className="camp-card-header">
-                <div className="camp-info">
-                  <h3 className="camp-title">{c.name}</h3>
-                  <span className="camp-objective">{c.objective}</span>
-                </div>
-                <span
-                  className={`camp-status-badge ${
-                    c.status === "Active"
-                      ? "status-badge-active"
-                      : c.status === "Paused"
-                      ? "status-badge-paused"
-                      : "status-badge-completed"
-                  }`}
+          {filteredCampaigns.map((c) => {
+            const photoUrl = getCampaignPhoto(c);
+            return (
+              <div key={c._id || c.id} className="campaign-modern-card">
+                {/* 1. Campaign Photo Media Banner */}
+                <div
+                  className="camp-card-media-banner"
+                  onClick={() => setSelectedCampaignPhoto({ url: photoUrl, title: c.name })}
+                  title="Click to view full photo"
                 >
-                  {c.status}
-                </span>
-              </div>
+                  <img
+                    src={photoUrl}
+                    alt={c.name}
+                    className="camp-card-media-img"
+                    onError={(e) => {
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80";
+                    }}
+                  />
+                  <div className="camp-card-media-overlay">
+                    <span className="camp-card-view-badge">
+                      <i className="fa-solid fa-expand mr-1"></i> View Photo
+                    </span>
+                  </div>
+                  <span
+                    className={`camp-media-status-badge ${
+                      c.status === "Active"
+                        ? "status-badge-active"
+                        : c.status === "Paused"
+                        ? "status-badge-paused"
+                        : "status-badge-completed"
+                    }`}
+                  >
+                    {c.status}
+                  </span>
+                </div>
+
+                {/* 2. Card Header */}
+                <div className="camp-card-header">
+                  <div className="camp-info">
+                    <h3 className="camp-title">{c.name}</h3>
+                    <span className="camp-objective">{c.objective}</span>
+                  </div>
+                </div>
 
               {/* Card Metrics (Budget & Est. ROI) */}
               <div className="camp-metrics-row">
@@ -251,7 +308,7 @@ export default function Campaigns({
               <div className="camp-dates-row">
                 <i className="fa-regular fa-calendar camp-date-icon"></i>
                 <span className="camp-date-text">
-                  {c.startDate || "2026-06-01"} &rarr; {c.endDate || "2026-08-31"}
+                  {c.startDate || "Active"} {c.endDate ? `→ ${c.endDate}` : "• Ongoing"}
                 </span>
               </div>
 
@@ -267,6 +324,14 @@ export default function Campaigns({
                 </div>
 
                 <div className="camp-actions-group">
+                  <Link
+                    to="/quick-generate"
+                    className="camp-action-btn generate-action"
+                    aria-label="Generate AI Content"
+                    title="Generate AI Content for Campaign"
+                  >
+                    <i className="fa-solid fa-wand-magic-sparkles"></i>
+                  </Link>
                   <button
                     type="button"
                     className="camp-action-btn edit-action"
@@ -286,7 +351,8 @@ export default function Campaigns({
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -314,6 +380,18 @@ export default function Campaigns({
                   placeholder="e.g. Black Friday Promotion"
                   value={campaignFormInputs.name}
                   onChange={(e) => setCampaignFormInputs({ ...campaignFormInputs, name: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-[var(--text-secondary)]">
+                  Campaign Photo / Image URL <span className="text-[10px] text-[var(--text-muted)] font-normal">(Optional, auto-detected if empty)</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="e.g. https://images.unsplash.com/... or data:image/..."
+                  value={campaignFormInputs.imageUrl}
+                  onChange={(e) => setCampaignFormInputs({ ...campaignFormInputs, imageUrl: e.target.value })}
                 />
               </div>
 
@@ -422,6 +500,41 @@ export default function Campaigns({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* FULLSCREEN IMAGE LIGHTBOX MODAL */}
+      {selectedCampaignPhoto && (
+        <div className="image-lightbox-overlay" onClick={() => setSelectedCampaignPhoto(null)}>
+          <div className="image-lightbox-card" onClick={(e) => e.stopPropagation()}>
+            <div className="image-lightbox-header">
+              <div className="image-lightbox-title">
+                <i className="fa-solid fa-image text-[var(--accent-blue)]"></i>
+                <span>{selectedCampaignPhoto.title}</span>
+              </div>
+              <div className="image-lightbox-actions">
+                <a
+                  href={selectedCampaignPhoto.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="image-lightbox-btn"
+                >
+                  <i className="fa-solid fa-arrow-up-right-from-square"></i> Open Full HD
+                </a>
+                <button
+                  type="button"
+                  className="image-lightbox-close"
+                  onClick={() => setSelectedCampaignPhoto(null)}
+                  aria-label="Close"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            </div>
+            <div className="image-lightbox-img-wrap">
+              <img src={selectedCampaignPhoto.url} alt={selectedCampaignPhoto.title} />
+            </div>
           </div>
         </div>
       )}

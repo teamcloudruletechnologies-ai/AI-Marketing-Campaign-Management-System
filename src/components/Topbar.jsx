@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api";
 
 export default function Topbar({
@@ -10,7 +11,8 @@ export default function Topbar({
   onGlobalSearch,
   showToast,
   sidebarOpen,
-  setSidebarOpen
+  setSidebarOpen,
+  onLogout
 }) {
   const [notifDropdownOpen, setNotifDropdownOpen] = React.useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = React.useState(false);
@@ -89,7 +91,12 @@ export default function Topbar({
 
   const handleLogout = (e) => {
     e.preventDefault();
-    alert("Demo Session ended. All data is preserved dynamically in MongoDB!");
+    if (onLogout) {
+      onLogout();
+    } else {
+      sessionStorage.removeItem("loggedIn");
+      window.location.href = "/login";
+    }
   };
 
   // Close dropdowns on window click
@@ -203,17 +210,15 @@ export default function Topbar({
                 )}
               </div>
               <div className="dropdown-footer">
-                <a
-                  href="#history"
+                <Link
+                  to="/history"
                   className="view-all-history"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setActivePage("history");
+                  onClick={() => {
                     setNotifDropdownOpen(false);
                   }}
                 >
                   View History Log
-                </a>
+                </Link>
               </div>
             </div>
           )}
@@ -256,33 +261,47 @@ export default function Topbar({
               <hr className="dropdown-divider" />
               <ul>
                 <li>
-                  <a
-                    href="#profile"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActivePage("profile");
+                  <Link
+                    to="/settings"
+                    onClick={() => {
                       setProfileDropdownOpen(false);
                     }}
                   >
                     <i className="fa-solid fa-user"></i> My Profile
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#profile"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActivePage("profile");
+                  <Link
+                    to="/settings"
+                    onClick={() => {
                       setProfileDropdownOpen(false);
                     }}
                   >
                     <i className="fa-solid fa-sliders"></i> Preferences
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" onClick={handleLogout} className="text-danger" id="dropdown-logout">
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="text-danger"
+                    id="dropdown-logout"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "8px 12px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      fontSize: 14,
+                      fontFamily: "inherit"
+                    }}
+                  >
                     <i className="fa-solid fa-right-from-bracket"></i> Logout
-                  </a>
+                  </button>
                 </li>
               </ul>
             </div>

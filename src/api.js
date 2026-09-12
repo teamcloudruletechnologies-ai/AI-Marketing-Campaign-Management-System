@@ -117,28 +117,38 @@ export const api = {
     return res.json();
   },
 
-  // n8n AI Content Generation (proxied through backend to avoid CORS)
-  async generateAIPost({ title, platform, theme }) {
-    const res = await apiFetch("/generate-ai-post", {
+  // Login
+  async login({ email, password }) {
+    const res = await apiFetch("/login", {
       method: "POST",
-      body: JSON.stringify({ title, platform, theme })
+      body: JSON.stringify({ email, password })
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `n8n webhook returned ${res.status}`);
-    }
     return res.json();
   },
 
-  // n8n Batch AI generation for Quick Generate
-  async generateAIBatch({ summary }) {
-    const res = await apiFetch("/generate-ai-batch", {
+  // Gemini Text & Image-to-Caption Generation
+  async generateText(summary, imageBase64 = null, mimeType = "image/jpeg", tone = "Engaging & Persuasive") {
+    const payload = { summary, tone };
+    if (imageBase64) {
+      payload.image_base64 = imageBase64;
+      payload.mime_type = mimeType;
+    }
+    const res = await apiFetch("/generate-text", {
       method: "POST",
-      body: JSON.stringify({ summary })
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  },
+
+  // Gemini Image Generation (replaces n8n)
+  async generateImage(prompt) {
+    const res = await apiFetch("/generate-image", {
+      method: "POST",
+      body: JSON.stringify({ prompt })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `n8n batch webhook returned ${res.status}`);
+      throw new Error(err.error || "Image generation failed");
     }
     return res.json();
   }

@@ -21,6 +21,8 @@ class CampaignBase(BaseModel):
     startDate: str
     endDate: str
     channels: Optional[List[str]] = []
+    imageUrl: Optional[str] = ""
+    content: Optional[dict] = None
 
 class CampaignCreate(CampaignBase):
     pass
@@ -34,6 +36,8 @@ class CampaignUpdate(BaseModel):
     startDate: Optional[str] = None
     endDate: Optional[str] = None
     channels: Optional[List[str]] = None
+    imageUrl: Optional[str] = None
+    content: Optional[dict] = None
 
 class CampaignResponse(CampaignBase, BaseDBModel):
     createdAt: Optional[datetime] = None
