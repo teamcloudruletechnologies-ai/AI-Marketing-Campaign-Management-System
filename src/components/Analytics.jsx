@@ -141,7 +141,7 @@ export default function Analytics({ campaigns = [], posts = [] }) {
             labels: roiLabels.length > 0 ? roiLabels : ["No campaigns yet"],
             datasets: [
               {
-                label: "Budget ($ ÷10)",
+                label: "Budget (₹ ÷10)",
                 data: budgetValues.length > 0 ? budgetValues : [0],
                 backgroundColor: "#0ea5e9",
                 borderRadius: 5

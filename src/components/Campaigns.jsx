@@ -104,7 +104,7 @@ export default function Campaigns({
         addHistoryLog(
           `Campaign '${camp.name}' Deleted`,
           "campaign",
-          `Removed campaign configuration with budget $${camp.budget.toLocaleString()}`
+          `Removed campaign configuration with budget ₹${camp.budget.toLocaleString()}`
         );
         pushNotification(
           "Campaign Removed",
@@ -293,7 +293,7 @@ export default function Campaigns({
                 <div className="camp-metric-col">
                   <span className="camp-metric-label">Budget</span>
                   <span className="camp-metric-val budget-val">
-                    ${c.budget ? c.budget.toLocaleString() : "0"}
+                    ₹{c.budget ? c.budget.toLocaleString() : "0"}
                   </span>
                 </div>
                 <div className="camp-metric-col text-right">
@@ -425,12 +425,12 @@ export default function Campaigns({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="form-group flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)]">Budget ($)</label>
+                  <label className="text-xs font-semibold text-[var(--text-secondary)]">Budget (₹)</label>
                   <input
                     type="number"
                     required
                     min="1"
-                    placeholder="e.g. 5000"
+                    placeholder="e.g. 50000"
                     value={campaignFormInputs.budget}
                     onChange={(e) => setCampaignFormInputs({ ...campaignFormInputs, budget: e.target.value })}
                   />

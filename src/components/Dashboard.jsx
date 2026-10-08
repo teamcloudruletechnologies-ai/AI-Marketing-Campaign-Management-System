@@ -542,7 +542,7 @@ export default function Dashboard({ campaigns = [], history = [], posts = [], se
                   <div className="campaign-meta-content">
                     <h4 className="campaign-title-text">{camp.name}</h4>
                     <p className="campaign-sub-text">
-                      {camp.objective} &bull; ${camp.budget ? camp.budget.toLocaleString() : "0"}
+                      {camp.objective} &bull; ₹{camp.budget ? camp.budget.toLocaleString() : "0"}
                     </p>
                   </div>
 
